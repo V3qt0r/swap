@@ -1,6 +1,7 @@
 package models
 
 import (
+
 	"time"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -10,6 +11,20 @@ const (
 )
 
 type OTPType string
+
+
+type Transactions struct {
+	Base
+	Name 			string 		`json:"name"`
+	Email 			string 		`json:"email"`
+	PhoneNumber 	string 		`json:"phoneNumber"`
+	OwnerId         uint        `json: "-"`
+	ItemId 			uint 		`json: "_"`
+	ItemName        string      `json:"itemName"`
+	AmountPaid      float64     `json: "amount:"amountPaid"`
+	Balance         float64     `json:"balance"`
+}
+
 
 type User struct {
 	Base
@@ -29,7 +44,10 @@ type User struct {
 	OneTimePassword       string    `json:"-"`
 	OneTimePasswordExpiry time.Time `json:"oneTimePasswordExpiry"`
 	OneTimePasswordValid  bool      `json:"oneTimePasswordValid" gorm:"type:bool;default:false"`
+	TransactionsId        uint      `json:"-"`
+	Transactions		  Transactions `gorm:"foreignKey:TransactionsId" json:"-"`
 }
+
 
 
 type IUserRepository interface {

@@ -3,6 +3,7 @@ package handler
 import (
 	"log"
 	"net/http"
+	"strings"
 	"strconv"
 	"swap/api"
 	"swap/apperrors"
@@ -48,7 +49,7 @@ func (h *ItemHandler) RegisterItem(c *gin.Context) {
 
 	registerItemPayload := &models.Item{
 		Name:			request.Name,
-		Category:		request.Category,
+		CategoryName:	request.CategoryName,
 		Description:	request.Description,
 		Prize:			request.Prize,
 		OwnerId:		request.OwnerId,
@@ -97,7 +98,7 @@ func (h *ItemHandler) GetItemsByCategory(c *gin.Context) {
 	limitValue, _ := strconv.Atoi(limit)
 	pageValue, _ := strconv.Atoi(page)
 
-	items, err := h.itemService.GetItemsByCategory(request.SearchTerm, limitValue, pageValue)
+	items, err := h.itemService.GetItemsByCategory(strings.ToUpper(request.SearchTerm), limitValue, pageValue)
 	if err != nil {
 		e := apperrors.NewInternal()
 		c.JSON(e.Status(), api.NewResponse(e.Status(), "Couldnt get items", gin.H{ "error" : e, }))
@@ -109,7 +110,7 @@ func (h *ItemHandler) GetItemsByCategory(c *gin.Context) {
 	for _, item := range items {
 		response := api.ItemSearchResponse{
 			Name:	 		item.Name,
-			Category:		item.Category,
+			CategoryName:	item.CategoryName,
 			Description:	item.Description,
 			Prize:			item.Prize,
 			UUID:			item.UUID.String(),
@@ -134,11 +135,10 @@ func (h *ItemHandler) GetUnsoldItemsByCategory(c *gin.Context) {
 	request.Sanitize()
 	limitValue, _ := strconv.Atoi(limit)
 	pageValue, _ := strconv.Atoi(page)
-
-	items, err := h.itemService.GetUnsoldItemsByCategory(request.SearchTerm, limitValue, pageValue)
+    
+	items, err := h.itemService.GetUnsoldItemsByCategory(strings.ToUpper(request.SearchTerm), limitValue, pageValue)
 	if err != nil {
-		e := apperrors.NewInternal()
-		c.JSON(e.Status(), api.NewResponse(e.Status(), "Couldnt get items", gin.H{ "error": e }))
+		c.JSON(http.StatusBadRequest, api.NewResponse(http.StatusBadRequest, "Couldnt get items", nil))
 		return
 	}
 
@@ -147,7 +147,7 @@ func (h *ItemHandler) GetUnsoldItemsByCategory(c *gin.Context) {
 	for _, item := range items {
 		response := api.ItemSearchResponse{
 			Name:	 		item.Name,
-			Category:		item.Category,
+			CategoryName:	item.CategoryName,
 			Description:	item.Description,
 			Prize:			item.Prize,
 			UUID:			item.UUID.String(),
@@ -180,7 +180,6 @@ func (h *ItemHandler) UpdateItem(c *gin.Context) {
 		return
 	}
 
-	request.Sanitize()
 	item := request.ToEntity()
 	id, _ := strconv.Atoi(itemId)
 	item.ID = uint(id)
@@ -274,25 +273,27 @@ func (h *ItemHandler) BuyItem(c *gin.Context) {
 		return
 	}
 
-	result, err := h.itemService.BuyItem(int(itemId), amount)
+	userDetails, _ := c.Get("id")
+	if userDetails == nil {
+		c.JSON(http.StatusInternalServerError, api.NewResponse(http.StatusInternalServerError, "User not authenticated", nil))
+		return
+	}
+	// userEmail := userDetails.(*middleware.User).Email
+	userId := userDetails.(*middleware.User).ID
+
+	result, err := h.itemService.BuyItem(int(userId), int(itemId), amount)
 
 	if err != nil {
 		e := apperrors.NewInternal()
 		c.JSON(e.Status(), api.NewResponse(e.Status(), "Failed to buy item", gin.H{ "error": e }))
 		return
 	}
-
-	userDetails, _ := c.Get("id")
-	if userDetails == nil {
-		c.JSON(http.StatusInternalServerError, api.NewResponse(http.StatusInternalServerError, "User not authenticated", nil))
-		return
-	}
-	userEmail := userDetails.(*middleware.User).Email
 	
-	err = utils.SendEmailWithDefaultSender(userEmail, "Purchase of Item", result)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, api.NewResponse(http.StatusInternalServerError, "Unable to send mail", nil))
-	}
+	// err = utils.SendEmailWithDefaultSender(userEmail, "Purchase of Item", result)
+	// if err != nil {
+	// 	c.JSON(http.StatusInternalServerError, api.NewResponse(http.StatusInternalServerError, "Unable to send mail", nil))
+	// 	return
+	// }
 
 	c.JSON(http.StatusOK, api.NewResponse(http.StatusOK, "Successful", result))
 }
@@ -375,4 +376,36 @@ func (h *ItemHandler) UploadFile(c *gin.Context){
 	}
 
 	c.JSON(http.StatusOK, api.NewResponse(http.StatusOK, "File uploaded successfully", filePath))
+}
+
+
+func (h *ItemHandler) UpdateCategory(c *gin.Context) {
+	var request map[string] interface{}
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, api.NewResponse(http.StatusBadRequest, "Invalid item payload", nil))
+		return
+	}
+
+	itemId, ok := request["id"].(float64)
+	if !ok || itemId < 0 {
+		c.JSON(http.StatusBadRequest, api.NewResponse(http.StatusBadRequest, "Invalid or missing ID", nil))
+		return
+	}
+
+	categoryName, ok := request["name"].(string)
+	if !ok || itemId < 0 {
+		c.JSON(http.StatusBadRequest, api.NewResponse(http.StatusBadRequest, "Invalid or category name", nil))
+		return
+	}
+	
+
+	err := h.itemService.UpdateCategory(int(itemId), categoryName)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, api.NewResponse(http.StatusBadRequest, "Unable to update category", nil))
+		return
+	}
+
+	c.JSON(http.StatusOK, api.NewResponse(http.StatusOK, "Successful", nil))
 }

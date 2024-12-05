@@ -4,11 +4,35 @@ type Item struct {
 	Base
 	Name				string		`json:"name"`
 	Description			string 		`json: "description"`
-	Category			string 		`json: "category" gorm:"default:'GENERAL'"` // MOBILE, AUTO, ELECTRONICS, GENERAL
+	CategoryName 		string 		`json: "catgeoryName"`
+	CategoryId          *uint        `json: "-"`
 	Prize				float64 	`json: "prize" gorm:"type:numeric(19,2);default:0"`
 	Sold				bool		`json: "sold" gorm:"type:boolean; default:false"`
 	User 				User        `gorm:"foreignKey:OwnerId" json:"-"`
-	OwnerId    			uint			`json: "-"`
+	OwnerId    			uint		`json: "-"`
+}
+
+
+type Category struct {
+	Base
+	Name 	string `json:"name" gorm:"unique"`
+	Ban     bool   `json:"ban" gorm:"type:boolean; defaut:false"`
+}
+type ICategoryRepository interface {
+	CreateCategory(name string) (*Category, error)
+	DeleteCategory(name string) error
+	GetAllValidCategories() ([]Category, error)
+	BanCategory(name string) error
+	CheckStatus(name string) (bool, error)
+	UnBanCategory(name string) error
+}
+type ICategoryService interface {
+	CreateCategory(name string) (*Category, error)
+	DeleteCategory(name string) error
+	GetAllValidCategories() ([]Category, error)
+	BanCategory(name string) error
+	CheckStatus(name string) (bool, error)
+	UnBanCategory(name string) error
 }
 
 
@@ -21,8 +45,9 @@ type IItemRepository interface {
 	UpdateItem(item Item) error
 	DeleteItem(itemId int) error
 	GetItemsByOwnerId(ownerId uint, limit, page int) ([]Item, error)
-	BuyItem(itemId int, amount float64) (string, error)
+	BuyItem(userId, itemId int, amount float64) (string, error)
 	SwapItem(item1Id, item2Id int) (string, error)
+	UpdateCategory(itemId int, categoryName string) error
 }
 
 
@@ -34,11 +59,8 @@ type IItemService interface {
 	GetUnsoldItemsByCategory(category string, limit, page int) ([]Item, error)
 	UpdateItem(item Item) error
 	DeleteItem(itemId int) error
-	BuyItem(itemId int, amount float64) (string, error)
+	BuyItem(userId, itemId int, amount float64) (string, error)
 	SwapItem(item1Id, item2Id int, amount float64) (string, error)
 	GetItemsByOwnerId(ownerId uint, limit, page int) ([]Item, error)
-	GetCategories() []string
-	AddCategory(category string) error
-	RemoveCategory(category string) error
+	UpdateCategory(itemId int, categoryName string) error
 }
-

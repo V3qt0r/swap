@@ -4,7 +4,6 @@ import (
 	"log"
 	"strconv"
 	"fmt"
-	"strings"
 
 	"swap/apperrors"
 	"swap/models"
@@ -13,57 +12,16 @@ import (
 
 type itemService struct {
 	ItemRepository models.IItemRepository
-	Categories []string
 }
 
 func NewItemService(ItemRepository models.IItemRepository) models.IItemService {
 	return &itemService{
 		ItemRepository: 	ItemRepository,
-		Categories:     	[]string{"AUTO", "MOBILE", "ELECTRONICS"},
 	}
-}
-
-func (s *itemService) GetCategories() []string {
-	return s.Categories
-}
-
-
-func (s *itemService) AddCategory(category string) error {
-	for _, c := range s.Categories {
-		if c == category {
-			return apperrors.NewBadRequest("Category already exists")
-		}
-	}
-	s.Categories = append(s.Categories, category)
-	return nil
-}
-
-
-func (s *itemService) RemoveCategory(category string) error {
-	for i, c := range s.Categories {
-		if c == category {
-			s.Categories = append(s.Categories[:i], s.Categories[i + 1:]...)
-			return nil
-		}
-	}
-	return apperrors.NewBadRequest("Category not found")
-}
-
-
-func (s *itemService) ValidateCategory(category string) bool {
-	for _, c := range s.Categories {
-		if c == category {
-			return true
-		}
-	}
-	return false
 }
 
 
 func (s *itemService) RegisterItem(item *models.Item) (*models.Item, error) {
-	if !s.ValidateCategory(strings.ToUpper(item.Category)){
-		return nil, apperrors.NewBadRequest(item.Category + " is not a valid category")
-	}
 	return s.ItemRepository.RegisterItem(item)
 }
 
@@ -93,8 +51,8 @@ func (s *itemService) DeleteItem(itemId int) error {
 }
 
 
-func (s *itemService) BuyItem(itemId int, amount float64) (string, error) {
-	return s.ItemRepository.BuyItem(itemId, amount)
+func (s *itemService) BuyItem(userId, itemId int, amount float64) (string, error) {
+	return s.ItemRepository.BuyItem(userId, itemId, amount)
 }
 
 
@@ -126,7 +84,7 @@ func (s *itemService) SwapItem(item1Id, item2Id int, amount float64) (string, er
 		return "", apperrors.NewBadRequest("Item with ID " + strconv.Itoa(int(item2Id)) + " have already been sold")
 	}
 
-	if item1.Category != item2.Category {
+	if item1.CategoryName != item2.CategoryName {
 		log.Print("Cannot swap with item outside of category")
 		return "", apperrors.NewBadRequest("Cannot swap with item outside of category")
 	}
@@ -167,4 +125,9 @@ func (s *itemService) GetItemsByOwnerId(ownerId uint, limit, page int) ([]models
 
 func (s *itemService) GetItemByUUID(uuid string) (*models.Item, error) {
 	return s.ItemRepository.GetByUUID(uuid)
+}
+
+
+func (s *itemService) UpdateCategory(itemId int, categoryName string) error {
+	return s.ItemRepository.UpdateCategory(itemId, categoryName)
 }

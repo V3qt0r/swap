@@ -38,12 +38,16 @@ func main() {
 
 	userRepository := repository.NewUserRepository(swapDB.DB)
 	itemRepository := repository.NewItemRepository(swapDB.DB)
+	categoryRepository := repository.NewCategoryRepository(swapDB.DB)
 
 	userService := services.NewUserService(userRepository)
 	itemService := services.NewItemService(itemRepository)
+	categoryService := services.NewCategoryService(categoryRepository)
 
 	userHandler := shandlers.NewUserHandler(userService)
 	itemHandler := shandlers.NewItemHandler(itemService)
+	categoryHandler := shandlers.NewCategoryHandler(categoryService)
+
 
 	jwtMiddleware, err := middleware.Middleware(userService)
 
@@ -128,6 +132,17 @@ func main() {
 	itemGroup.GET("/search", itemHandler.GetItemsByCategory)
 	itemGroup.GET("/search-unsold", itemHandler.GetUnsoldItemsByCategory)
 	itemGroup.POST("/upload/:id", itemHandler.UploadFile)
+	itemGroup.PUT("/update", itemHandler.UpdateCategory)
+
+
+	categoryGroup := ginEngine.Group("api/categories").Use(jwtMiddleware.MiddlewareFunc())
+	categoryGroup.POST("/create", categoryHandler.CreateCategory)
+
+	categoryGroup.PUT("/ban", categoryHandler.BanCategory)
+	categoryGroup.PUT("/unban", categoryHandler.UnBanCategory)
+	categoryGroup.GET("/status", categoryHandler.CheckStatus)
+	categoryGroup.GET("/valid-categories", categoryHandler.GetAllValidCategories)
+	categoryGroup.DELETE("/delete", categoryHandler.DeleteCategory)
 
 	
 	ginEngine.Run(":" + os.Getenv("PORT"))

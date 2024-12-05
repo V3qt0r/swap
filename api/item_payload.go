@@ -10,7 +10,7 @@ import (
 
 type RegisterItemPayload struct {
 	Name		string	`json:"name"`
-	Category	string	`json:"category"`
+	CategoryName	string	`json:"categoryName"`
 	Description	string	`json:"description"`
 	Prize		float64	`json:"prize"`
 	OwnerId     uint     `json:"ownerId"`
@@ -21,14 +21,14 @@ func (r RegisterItemPayload) Validate() error {
 	return validation.ValidateStruct(&r,
 		validation.Field(&r.Name, validation.Required, validation.Length(3, 30)),
 		validation.Field(&r.Description, validation.Length(10, 300)),
-		validation.Field(&r.Category, validation.Required),
+		validation.Field(&r.CategoryName, validation.Required),
 		validation.Field(&r.Prize, validation.Required, validation.Min(0.00)),
 	)
 }
 
 func (r RegisterItemPayload) Sanitize() {
-	r.Category = strings.TrimSpace(r.Category)
-	r.Category = strings.ToUpper(r.Category)
+	r.CategoryName = strings.TrimSpace(r.CategoryName)
+	r.CategoryName = strings.ToUpper(r.CategoryName)
 }
 
 
@@ -39,7 +39,7 @@ type ItemSearchRequest struct {
 
 type ItemSearchResponse struct {
 	Name		string `json:"name"`
-	Category	string `json:"category"`
+	CategoryName	string `json:"categoryName"`
 	Description	string `json:"description"`
 	Prize		float64`json:"prize"`
 	UUID        string `json:"uuid"`
@@ -61,23 +61,13 @@ func (r ItemSearchRequest) Validate() error {
 
 type ItemUpdatePayload struct {
 	Name		string 	`json:"name"`
-	Category	string 	`json:"category"`
 	Description	string 	`json:"description"`
 	Prize		float64 `json:"prize"`
 }
 
 
 func (r ItemUpdatePayload) Validate() error {
-	if r.Category != "" {
-		return validation.Validate(r.Category, validation.Required)
-	}
 	return nil
-}
-
-
-func (r ItemUpdatePayload) Sanitize() {
-	r.Category = strings.TrimSpace(r.Category)
-	r.Category = strings.ToUpper(r.Category)
 }
 
 
@@ -86,9 +76,6 @@ func (r ItemUpdatePayload) ToEntity() models.Item {
 
 	if r.Name != "" {
 		item.Name = r.Name
-	}
-	if r.Category != "" {
-		item.Category = r.Category
 	}
 	if r.Description != "" {
 		item.Description = r.Description

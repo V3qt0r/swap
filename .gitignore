@@ -4,6 +4,3 @@
 __debug_bin
 prod-ca-2021.crt
 fly.toml
-./uploads
-./utils/s3_client.go
-./handler/utils.go

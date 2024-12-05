@@ -34,7 +34,7 @@ func (r *userRepository) GetUserById(id int) (*models.User, error) {
 		}
 		return user, apperrors.NewInternal()
 	}
-	return user, nil
+	return user, nil 
 }
 
 

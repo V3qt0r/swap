@@ -349,8 +349,7 @@ func (h *UserHandler) DisableTOTP(c *gin.Context) {
 func (h *UserHandler) EnableTOTP(c *gin.Context) {
 	userDetails, _ := c.Get("id")
 	if userDetails == nil {
-		c.JSON(http.StatusInternalServerError, api.NewResponse(http.StatusInternalServerError, "Error getting user details", 
-			nil))
+		c.JSON(http.StatusInternalServerError, api.NewResponse(http.StatusInternalServerError, "Error getting user details", nil))
 			return
 	}
 	userId := userDetails.(*middleware.User).ID
@@ -413,4 +412,36 @@ func (h *UserHandler) FindUserByPhoneNumber(c *gin.Context) {
 	response.UUID = user.UUID.String()
 
 	c.JSON(http.StatusOK, api.NewResponse(http.StatusOK, "Successful", response))
+}
+
+
+func (h *UserHandler) GetUserTransactions(c *gin.Context) {
+	userDetails, _ := c.Get("id")
+	limit := c.Query("limit")
+	page := c.Query("page")
+
+	if userDetails == nil {
+		c.JSON(http.StatusInternalServerError, api.NewResponse(http.StatusInternalServerError, "Error getting user details", nil))
+		return
+	}
+	userId := int(userDetails.(*middleware.User).ID)
+	limitValue, _ := strconv.Atoi(limit)
+	pageValue, _ := strconv.Atoi(page)
+
+	transactions, err := h.userService.GetUserTransactions(userId, limitValue, pageValue)
+
+	if transactions == nil {
+		log.Print("No transaction available")
+		c.JSON(http.StatusOK, api.NewResponse(http.StatusOK, "No transaction available", nil))
+		return
+	}
+	if err != nil {
+		log.Print("Error getting user transactions")
+		e := apperrors.NewInternal()
+
+		c.JSON(e.Status(), api.NewResponse(e.Status(), e.Message, gin.H{ "error" : e, }))
+		return
+	}
+
+	c.JSON(http.StatusOK, api.NewResponse(http.StatusOK, "Successful", transactions))
 }

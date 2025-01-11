@@ -57,28 +57,6 @@ func (s *userService) Login(email, password string) (*models.User, error) {
 	return user, nil
 }
 
-// func (s *userService) comparePasswords(storedPassword string, suppliedPassword string) (bool, error) {
-// 	pwsalt := strings.Split(storedPassword, ".")
-
-// 	if len(pwsalt) < 2 {
-// 		return false, fmt.Errorf("did not provide a valid hash")
-// 	}
-
-// 	salt, err := hex.DecodeString(pwsalt[1])
-
-// 	if err != nil {
-// 		return false, fmt.Errorf("unable to verify user password")
-// 	}
-
-// 	shash, err := scrypt.Key([]byte(suppliedPassword), salt, 32768, 8, 1, 32)
-
-// 	if err != nil {
-// 		return false, fmt.Errorf("unable to verify user password")
-// 	}
-
-// 	return hex.EncodeToString(shash) == pwsalt[0], nil
-// }
-
 
 func (s *userService) GetUserById(id int) (*models.User, error) {
 	user, err := s.UserRepository.GetUserById(id)
@@ -363,4 +341,9 @@ func (s *userService) EnableTOTP(userId int) error {
 	}
 
 	return nil
+}
+
+
+func (s *userService) GetUserTransactions(userId, limit, page int) ([]models.Transactions, error){
+	return s.UserRepository.GetUserTransactions(userId, limit, page)
 }

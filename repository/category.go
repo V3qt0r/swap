@@ -59,7 +59,7 @@ func (r *categoryRepository) DeleteCategory(category string) error {
 func (r *categoryRepository) GetAllValidCategories() ([]models.Category, error) {
 	var categories []models.Category
 	
-	if err := r.DB.Select("name", "ban").Where("ban = false AND deleted_at = null").Find(&categories).Error; err != nil {
+	if err := r.DB.Select("name", "ban", "id").Where("ban = ?", false).Find(&categories).Error; err != nil {
 		return categories, apperrors.NewInternal()
 	}
 	return categories, nil
@@ -109,4 +109,22 @@ func (r *categoryRepository) CheckStatus(name string) (bool, error) {
 	}
 
 	return category.Ban, nil
+}
+
+
+func (r *categoryRepository) GetAllItemsInCategory(id, limit, page int) ([]models.Item, error) {
+	var items []models.Item
+	category := &models.Category{}
+
+	if err := r.DB.Where("id = ?", id).Find(&category).Error; err != nil {
+		log.Print("Could not find category")
+		return items, apperrors.NewBadRequest("Could not find category")
+	}
+
+	if err := r.DB.Where("category_id = ? AND sold = ?", category.ID, false).Find(&items).Error; err != nil {
+		log.Print("Could not find items")
+		return items, apperrors.NewInternal()
+	}
+
+	return items, nil
 }

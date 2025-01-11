@@ -34,7 +34,7 @@ func InitDS() (*Ds, error) {
 	}
 
 	if err := db.AutoMigrate(
-		&models.User{}, &models.Item{},
+		&models.User{}, &models.Item{}, &models.SwapRequest{}, &models.Category{}, &models.Image{},
 	); err != nil {
 		return nil, fmt.Errorf("Error migrating models: %w", err)
 	}

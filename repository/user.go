@@ -58,8 +58,7 @@ func (r *userRepository) CreateUser(user *models.User) (*models.User, error) {
 		log.Printf("Could not create user with email %v. Reason: %v\n", user.Email, result.Error)
 		return nil, apperrors.NewInternal()
 	}
-	userId := user.ID
-	user.ID = userId
+	
 	return user, nil
 }
 
@@ -179,7 +178,7 @@ func (r *userRepository) UpdateUser(user models.User) error {
 		updatedDetails["Gender"] = user.Gender
 	}
 	if user.Location != "" {
-		updatedDetails["Location"] = user.Location
+		updatedDetails["Location"] = user.Location 
 	}
 	if user.BVN != "" {
 		updatedDetails["BVN"] = user.BVN
@@ -201,7 +200,7 @@ func (r *userRepository) UpdateUserTOTP(user models.User, totpSecret string, tot
 			}
 			return apperrors.NewInternal()
 		}
-		return nil
+		return nil 
 }
 
 
@@ -222,4 +221,22 @@ func (r *userRepository) UpdatePassword(id uint, password string) error {
 		return erro.Error
 	}
 	return nil
+}
+
+
+func (r *userRepository) GetUserTransactions(userId, limit, page int) ([]models.Transactions, error) {
+	var transactions []models.Transactions
+	foundUser, _ := r.GetUserById(userId)
+
+	if foundUser == nil {
+		log.Print("Could not find user with provided id")
+		return transactions, apperrors.NewBadRequest("Could not find user with provided id")
+	}
+
+	if err := r.DB.Where("owner_id = ?", userId).Find(&transactions).Error; err != nil {
+		log.Print("Could not find user transactions\n")
+		return transactions, apperrors.NewBadRequest("Could not find user transaction")
+	}
+
+	return transactions, nil
 }

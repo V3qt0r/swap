@@ -46,3 +46,8 @@ func (s *categoryService) UnBanCategory(name string) error {
 func (s *categoryService) CheckStatus(name string) (bool, error) {
 	return s.CategoryRepository.CheckStatus(name)
 }
+
+
+func(s *categoryService) GetAllItemsInCategory(id, limit, page int) ([]models.Item, error) {
+	return s.CategoryRepository.GetAllItemsInCategory(id, limit, page)
+}

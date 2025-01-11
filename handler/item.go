@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"strings"
 	"strconv"
+	"swap/utils"
 	"swap/api"
 	"swap/apperrors"
 	"swap/middleware"
 	"swap/models"
-	"swap/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,11 +17,12 @@ import (
 
 type ItemHandler struct {
 	itemService models.IItemService
+	Utils *utils.Utils
 }
 
 
-func NewItemHandler(ItemService models.IItemService) *ItemHandler{
-	h := &ItemHandler{ itemService: ItemService}
+func NewItemHandler(ItemService models.IItemService, util *utils.Utils) *ItemHandler{
+	h := &ItemHandler{ itemService: ItemService, Utils: util }
 	return h
 }
 
@@ -40,6 +41,7 @@ func (h *ItemHandler) RegisterItem(c *gin.Context) {
 	userDetails, _ := c.Get("id")
 
 	if userDetails == nil {
+		log.Print("User not authenticated")
 		c.JSON(http.StatusInternalServerError, api.NewResponse(http.StatusInternalServerError, "User not authenticated", nil))
 		return
 	}
@@ -57,6 +59,7 @@ func (h *ItemHandler) RegisterItem(c *gin.Context) {
 
 	item, err := h.itemService.RegisterItem(registerItemPayload)
 	if err != nil {
+		log.Print("Unable to register item")
 		c.JSON(apperrors.Status(err), api.NewResponse(apperrors.Status(err), "Unable to register item", gin.H{
 			"error": err,
 		}))
@@ -255,20 +258,18 @@ func (h *ItemHandler) GetItemsByOwnerId(c *gin.Context) {
 
 func (h *ItemHandler) BuyItem(c *gin.Context) {
 	var request map[string] interface{}
+	id := c.Param("id")
+
+	itemId, _ := strconv.Atoi(id)
 
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, api.NewResponse(http.StatusBadRequest, "Invalid item payload", nil))
 		return
 	}
 
-	itemId, ok := request["id"].(float64)
-	if !ok || itemId < 0 {
-		c.JSON(http.StatusBadRequest, api.NewResponse(http.StatusBadRequest, "Invalid or missing ID", nil))
-		return
-	}
-
 	amount, ok := request["amount"].(float64)
 	if !ok || amount < 0.00 {
+		log.Print("Invalid or missing amount")
 		c.JSON(http.StatusBadRequest, api.NewResponse(http.StatusBadRequest, "Invalid or missing Amount", nil))
 		return
 	}
@@ -300,57 +301,6 @@ func (h *ItemHandler) BuyItem(c *gin.Context) {
 
 
 
-func (h *ItemHandler) SwapItem(c *gin.Context) {
-	var request map[string] interface{}
-
-	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, api.NewResponse(http.StatusBadRequest, "Invalid item payload", nil))
-		return
-	}
-
-	item1Id, ok := request["id1"].(float64)
-	if !ok || item1Id < 0 {
-		c.JSON(http.StatusBadRequest, api.NewResponse(http.StatusBadRequest, "Invalid or missing ID", nil))
-		return
-	}
-
-	item2Id, ok := request["id2"].(float64)
-	if !ok || item2Id < 0 {
-		c.JSON(http.StatusBadRequest, api.NewResponse(http.StatusBadRequest, "Invalid or missing ID", nil))
-		return
-	}
-
-	amount, ok := request["amount"].(float64)
-	if !ok || amount < 0.00 {
-		c.JSON(http.StatusBadRequest, api.NewResponse(http.StatusBadRequest, "Invalid or missing Amount", nil))
-		return
-	}
-
-	result, err := h.itemService.SwapItem(int(item1Id), int(item2Id), amount)
-
-	if err != nil {
-		e := apperrors.NewInternal()
-		c.JSON(e.Status(), api.NewResponse(e.Status(), "Failed to swap item", gin.H{ "error": e }))
-		return
-	}
-
-
-	userDetails, _ := c.Get("id")
-	if userDetails == nil {
-		c.JSON(http.StatusInternalServerError, api.NewResponse(http.StatusInternalServerError, "User not authenticated", nil))
-		return
-	}
-	userEmail := userDetails.(*middleware.User).Email
-	
-	err = utils.SendEmailWithDefaultSender(userEmail, "Purchase of Item", result)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, api.NewResponse(http.StatusInternalServerError, "Unable to send mail", nil))
-	}
-
-	c.JSON(http.StatusOK, api.NewResponse(http.StatusOK, "Successful", result))
-}
-
-
 func (h *ItemHandler) UploadFile(c *gin.Context){
 	itemIdParam := c.Param("id")
 	itemId, _ := strconv.Atoi(itemIdParam)
@@ -369,7 +319,7 @@ func (h *ItemHandler) UploadFile(c *gin.Context){
 
 	uploadDir := "./uploads"
 
-	filePath, err := utils.UploadItemFile(itemId, file, uploadDir)
+	filePath, err := h.Utils.UploadItemFile(itemId, file, uploadDir)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.NewResponse(http.StatusInternalServerError, "File not upoaded", nil))
 		return
@@ -392,7 +342,7 @@ func (h *ItemHandler) UpdateCategory(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, api.NewResponse(http.StatusBadRequest, "Invalid or missing ID", nil))
 		return
 	}
-
+	
 	categoryName, ok := request["name"].(string)
 	if !ok || itemId < 0 {
 		c.JSON(http.StatusBadRequest, api.NewResponse(http.StatusBadRequest, "Invalid or category name", nil))

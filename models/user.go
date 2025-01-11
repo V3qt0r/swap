@@ -18,11 +18,14 @@ type Transactions struct {
 	Name 			string 		`json:"name"`
 	Email 			string 		`json:"email"`
 	PhoneNumber 	string 		`json:"phoneNumber"`
-	OwnerId         uint        `json: "-"`
+	OwnerId         uint        `gorm:"not null;index" json: "-"`
 	ItemId 			uint 		`json: "_"`
 	ItemName        string      `json:"itemName"`
+	Bought          bool        `json:"bought"`
+	Swapped         bool        `json:"swapped"`
 	AmountPaid      float64     `json: "amount:"amountPaid"`
-	Balance         float64     `json:"balance"`
+	BalanceAvailabe float64     `json:"balanceAvailable"`
+	BalanceOwed     float64		`json:"balanceOwed"`
 }
 
 
@@ -44,8 +47,8 @@ type User struct {
 	OneTimePassword       string    `json:"-"`
 	OneTimePasswordExpiry time.Time `json:"oneTimePasswordExpiry"`
 	OneTimePasswordValid  bool      `json:"oneTimePasswordValid" gorm:"type:bool;default:false"`
-	TransactionsId        uint      `json:"-"`
-	Transactions		  Transactions `gorm:"foreignKey:TransactionsId" json:"-"`
+	// TransactionsId        uint      `json:"-"`
+	// Transactions		  Transactions `gorm:"foreignKey:TransactionsId" json:"-"`
 }
 
 
@@ -63,6 +66,7 @@ type IUserRepository interface {
 	UpdateUser(user User) error
 	UpdateUserTOTP(user User, totpSecret string, totpEnabled bool) error
 	UpdatePassword(userId uint, password string) error
+	GetUserTransactions(userId, limit, page int) ([]Transactions, error)
 }
 
 type IUserService interface {
@@ -84,6 +88,7 @@ type IUserService interface {
 	VerifyTOTP(userId int, verifyTOTP VerifyTOTPRequest) error
 	DisableTOTP(userId int) error
 	EnableTOTP(userId int) error
+	GetUserTransactions(userId, limit, page int) ([]Transactions, error)
 }
 
 func (user *User) HashPassword(password string) error {

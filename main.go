@@ -4,9 +4,11 @@ import (
 	"log"
 	"os"
 	"net/http"
+
 	"swap/middleware"
 	"swap/repository"
-	"swap/services"
+	services "swap/services"
+	utils "swap/utils"
 
 	shandlers "swap/handler"
 	sdb "swap/datasources"
@@ -26,7 +28,7 @@ func main() {
 	if !isEnvSet {
 		err := godotenv.Load()
 		if err != nil {
-			log.Fatalln("Error loaing .env file")
+			log.Fatalln("Error loading .env file")
 		}
 	}
 
@@ -39,14 +41,21 @@ func main() {
 	userRepository := repository.NewUserRepository(swapDB.DB)
 	itemRepository := repository.NewItemRepository(swapDB.DB)
 	categoryRepository := repository.NewCategoryRepository(swapDB.DB)
+	swapRepository := repository.NewSwapRepository(swapDB.DB)
+	imageRepository := repository.NewImageRepository(swapDB.DB)
 
 	userService := services.NewUserService(userRepository)
 	itemService := services.NewItemService(itemRepository)
+	imageService := services.NewImageService(imageRepository)
 	categoryService := services.NewCategoryService(categoryRepository)
+	swapService := services.NewSwapService(swapRepository)
+	util := utils.NewUtils(imageRepository)
 
 	userHandler := shandlers.NewUserHandler(userService)
-	itemHandler := shandlers.NewItemHandler(itemService)
+	itemHandler := shandlers.NewItemHandler(itemService, util)
+	imageHandler := shandlers.NewImageHandler(imageService)
 	categoryHandler := shandlers.NewCategoryHandler(categoryService)
+	swapHandler := shandlers.NewSwapHandler(swapService)
 
 
 	jwtMiddleware, err := middleware.Middleware(userService)
@@ -118,12 +127,13 @@ func main() {
 	userAuthRoutes.POST("/totp/enable", userHandler.EnableTOTP)
 	userAuthRoutes.GET("/emailOruserName", userHandler.FindUserByEmailOrUsername)
 	userAuthRoutes.GET("/phoneNumber", userHandler.FindUserByPhoneNumber)
+	userAuthRoutes.GET("/transaction", userHandler.GetUserTransactions)
 
 
 	itemGroup := ginEngine.Group("/api/items").Use(jwtMiddleware.MiddlewareFunc())
 	itemGroup.POST("/register", itemHandler.RegisterItem)
-	itemGroup.PUT("/buy", itemHandler.BuyItem)
-	itemGroup.PUT("/swap", itemHandler.SwapItem)
+	itemGroup.PUT("/buy/:id", itemHandler.BuyItem)
+	// itemGroup.PUT("/swap", itemHandler.SwapItem)
 
 	itemGroup.GET("/:id", itemHandler.GetItemById)
 	itemGroup.PUT("/:id", itemHandler.UpdateItem)
@@ -142,8 +152,25 @@ func main() {
 	categoryGroup.PUT("/unban", categoryHandler.UnBanCategory)
 	categoryGroup.GET("/status", categoryHandler.CheckStatus)
 	categoryGroup.GET("/valid-categories", categoryHandler.GetAllValidCategories)
+	categoryGroup.GET("/:id", categoryHandler.GetAllItemsInCategory)
 	categoryGroup.DELETE("/delete", categoryHandler.DeleteCategory)
 
-	
+
+	swapGroup := ginEngine.Group("api/swaps").Use(jwtMiddleware.MiddlewareFunc())
+	swapGroup.POST("/initiate", swapHandler.InitiateSwapRequest)
+
+	swapGroup.GET("/pending-requests", swapHandler.GetPendingSwapRequests)
+	swapGroup.GET("/incomplete-swap", swapHandler.GetIncompleteSwapByInitiatorId)
+	swapGroup.GET("/incomplete-swap-requests", swapHandler.GetAllIncompleteSwapByOwnerId)
+	swapGroup.PUT("/accept/:id", swapHandler.AcceptSwapRequest)
+
+	swapGroup.DELETE("/complete/:id", swapHandler.CompleteSwapRequest)
+	swapGroup.DELETE("/reject/:id", swapHandler.RejectSwapRequest)
+
+	ginEngine.GET("/read-image", imageHandler.ReadImage)
+	ginEngine.GET("/read-image/:id", imageHandler.ReadFirstImageById)
+	ginEngine.GET("/read-all-image/:id", imageHandler.ReadAllImagesByItemId)
+	ginEngine.GET("/read-image-path", imageHandler.ReadImageByPath)
+
 	ginEngine.Run(":" + os.Getenv("PORT"))
 }

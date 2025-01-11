@@ -11,6 +11,7 @@ require (
 	github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/jackc/pgx/v5 v5.3.0 // indirect
+	github.com/lib/pq v1.10.9 // indirect
 	github.com/pquerna/otp v1.4.0 // indirect
 	github.com/robfig/cron/v3 v3.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect

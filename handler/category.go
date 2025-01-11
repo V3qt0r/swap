@@ -6,6 +6,8 @@ import (
 	"swap/api"
 	"swap/models"
 
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -161,4 +163,25 @@ func (h *CategoryHandler) CheckStatus(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, api.NewResponse(http.StatusOK, "Successful", result))
+}
+
+
+func (h *CategoryHandler) GetAllItemsInCategory(c *gin.Context) {
+	routeId := c.Param("id")
+	categoryId, _ := strconv.Atoi(routeId)
+
+	limit := c.Query("limit")
+	page := c.Query("page")
+
+	limitValue, _ := strconv.Atoi(limit)
+	pageValue, _ := strconv.Atoi(page)
+
+	items, err := h.categoryService.GetAllItemsInCategory(categoryId, limitValue, pageValue)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, api.NewResponse(http.StatusBadRequest, "Couldnt get items", nil))
+		return
+	}
+
+	c.JSON(http.StatusOK, api.NewResponse(http.StatusOK, "Successful", items))
 }

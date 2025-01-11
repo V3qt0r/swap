@@ -41,14 +41,14 @@ func (r RegisterPayload) Sanitize() {
 func (r RegisterPayload) Validate() error {
 	return validation.ValidateStruct(&r,
 		validation.Field(&r.Email, validation.Required, is.EmailFormat),
-		validation.Field(&r.PhoneNumber, validation.Required /*validation.By(validatePhoneNumber)*/),
-		validation.Field(&r.UserName, validation.Required, validation.Length(3, 30)),
+		validation.Field(&r.PhoneNumber /*validation.By(validatePhoneNumber)*/),
+		validation.Field(&r.UserName, validation.Length(3, 30)),
 		validation.Field(&r.Password, validation.Required, validation.Length(6, 150)),
 		validation.Field(&r.IsAbove18, validation.Required, validation.In(true).Error("You must be above 18 to register")),
-		validation.Field(&r.Name, validation.Required, validation.Length(3, 30)),
-		validation.Field(&r.Gender, validation.Required, validation.In("male", "female").Error("You must either be male or female")),
-		validation.Field(&r.Location, validation.Required),
-		validation.Field(&r.BVN, validation.Required, validation.Length(11, 11).Error("BVN must be 11 characters long"), 
+		validation.Field(&r.Name,  validation.Length(3, 30)),
+		validation.Field(&r.Gender, validation.In("male", "female").Error("You must either be male or female")),
+		validation.Field(&r.Location, ),
+		validation.Field(&r.BVN, validation.Length(11, 11).Error("BVN must be 11 characters long"), 
 							validation.By(isDigits)),
 	)
 }

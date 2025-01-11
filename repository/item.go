@@ -2,11 +2,13 @@ package repository
 
 import (
 	"swap/models"
+	"swap/apperrors"
+	
 	"errors"
 	"strconv"
 	"fmt"
 	"log"
-	"swap/apperrors"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -58,7 +60,6 @@ func (r *itemRepository) GetItemById(id int) (*models.Item, error) {
 	return item, nil
 }
 
-
 func (r * itemRepository) GetByUUID(uuid string) (*models.Item, error) {
 	item := &models.Item{}
 
@@ -77,8 +78,7 @@ func (r * itemRepository) GetByUUID(uuid string) (*models.Item, error) {
 func (r *itemRepository) GetItemsByCategory(category string, limit, page int) ([]models.Item, error) {
 	var items []models.Item
 
-	err := r.DB.Select("items.name", "items.description", "items.prize", "items.ID", "items.UUID","items.owner_id", "items.category_name").
-				Joins("JOIN categories ON categories.id = items.category_id").
+	err := r.DB.Joins("JOIN categories ON categories.id = items.category_id").
 				Where("categories.name = ?", category).
 				Find(&items)
 
@@ -95,6 +95,7 @@ func (r *itemRepository) RegisterItem(item *models.Item) (*models.Item, error) {
 
 		if err := tx.Where("name = ? AND ban = ?", item.CategoryName, false).First(&category).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound){
+				log.Print("Invalid category")
 				return fmt.Errorf("Invalid category: %v", item.CategoryName)
 			}
 			return err
@@ -103,12 +104,14 @@ func (r *itemRepository) RegisterItem(item *models.Item) (*models.Item, error) {
 		item.CategoryId = &category.ID
 		item.CategoryName = category.Name
 		if err := tx.Create(&item).Error; err != nil {
+			log.Print("Error")
 			return err
 		}
 		return nil
 	})
 
 	if err != nil {
+		log.Print("Error")
 		return nil, apperrors.NewInternal()
 	}
 
@@ -119,8 +122,7 @@ func (r *itemRepository) RegisterItem(item *models.Item) (*models.Item, error) {
 func (r *itemRepository) GetUnsoldItemsByCategory(category string, limit, page int) ([]models.Item, error) {
 	var items []models.Item
 
-	err := r.DB.Select("items.name", "items.description", "items.prize", "items.ID", "items.UUID","items.owner_id", "items.category_name").
-				Joins("JOIN categories ON categories.id = items.category_id").
+	err := r.DB.Joins("JOIN categories ON categories.id = items.category_id").
 				Where("categories.name = ? AND categories.ban = ? AND items.sold = ?", category, false, false).
 				Find(&items)
 
@@ -197,6 +199,11 @@ func (r *itemRepository) BuyItem(userID, id int, amount float64) (string, error)
 		return "", apperrors.NewBadRequest("Unable to find buyer")
 	}
 
+	if item.OwnerId == uint(userID) {
+		log.Print("Cannot purchase own item!")
+		return "", apperrors.NewBadRequest("Cannot purchase own item!")
+	}
+
 
 	if item.Sold == true {
 		log.Print("Item have already been sold\n")
@@ -216,49 +223,25 @@ func (r *itemRepository) BuyItem(userID, id int, amount float64) (string, error)
 		OwnerId: user.ID,
 		ItemId: item.ID,
 		ItemName: item.Name,
+		Bought:  true,
+		Swapped: false,
 		AmountPaid: amount,
-		Balance: balance,
+		BalanceAvailabe: balance,
+		BalanceOwed: 0.00,
 	}
 
 	if err := r.DB.Create(&transactions).Error; err != nil {
 		return "", apperrors.NewBadRequest("Unable to create transaction")
 	}
 
-	if err := r.DB.Model(&item).Updates(models.Item{Sold: true}).Error; err != nil {
+	if err := r.DB.Model(&item).Updates(models.Item{Sold: true, SoldAt : time.Now().Truncate(time.Second)}).Error; err != nil {
 		return "", apperrors.NewInternal()
 	}
 	
 
-	result := fmt.Sprintf("Item ID: %v\nItem Name: %s\nSold: %v\nPrize: $%.2f\nAmount Paid: $%.2f\nBalance To Retreive: $%.2f\n",
-	item.ID, item.Name, item.Sold, item.Prize, amount, balance)
+	result := fmt.Sprintf("Item ID: %v\nItem Name: %s\nSwapped: %v\nPrize: $%.2f\nAmount Paid: $%.2f\nBalance To Retreive: $%.2f\n",
+	item.ID, item.Name, true, item.Prize, amount, balance)
 
 	return result, nil
 }
 
-
-
-
-
-func (r *itemRepository) SwapItem(item1Id, item2Id int) (string, error) {
-	item1, err := r.GetItemById(item1Id)
-
-	if err != nil {
-		return "", apperrors.NewBadRequest("Item with ID "+ strconv.Itoa(item1Id) + " not found")
-	}
-
-	item2, err := r.GetItemById(item2Id)
-
-	if err != nil {
-		return "", apperrors.NewBadRequest("Item with ID "+ strconv.Itoa(item2Id) + " not found")
-	}
-
-	if err := r.DB.Model(&item1).Updates(models.Item{Sold: true}).Error; err != nil {
-		return "", apperrors.NewInternal()
-	}
-
-	if err := r.DB.Model(&item2).Updates(models.Item{Sold: true}).Error; err != nil {
-		return "", apperrors.NewInternal()
-	}
-
-	return "", nil
-}

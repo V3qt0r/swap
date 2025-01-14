@@ -1,13 +1,14 @@
 package models
 
+
 type Image struct {
 	Base
-	FilePath 		string		`json:"filePath"`
-	FileName        string      `json:"fileName"`
-	ItemId 			int			`json:"itemId"`
-	OwnerId 		int 		`json:"ownerId"`
+	FilePath string `json:"filePath"`
+	FileName string `json:"fileName"`
+	ItemId   uint   `json:"itemId" gorm:"not null"` // Foreign key to Item
+	Item     Item   `gorm:"foreignKey:ItemId" json:"-"` // Item relationship
+	OwnerId  uint   `json:"ownerId"`
 }
-
 
 type IImageRepository interface {
 	UploadImage(itemId int, folderName, fileName string) error

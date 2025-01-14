@@ -38,6 +38,8 @@ func main() {
 		log.Printf("Error on application startup: %v\n", err)
 	}
 
+	sdb.MigrateDB(swapDB.DB)
+	
 	userRepository := repository.NewUserRepository(swapDB.DB)
 	itemRepository := repository.NewItemRepository(swapDB.DB)
 	categoryRepository := repository.NewCategoryRepository(swapDB.DB)

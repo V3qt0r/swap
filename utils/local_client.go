@@ -73,7 +73,9 @@ func (u *Utils)UploadItemFile(itemId int, file *multipart.FileHeader, uploadDir 
 
 	filePath := filepath.Join(itemDir, filename)
 
-	err = u.imageRepository.UploadImage(itemId, itemDir, filename)
+	imagePath := fmt.Sprintf("item_%d", itemId)
+
+	err = u.imageRepository.UploadImage(itemId, imagePath, filename)
 	if err != nil {
 		log.Print("Failed to update images in item")
 		return "", fmt.Errorf("Failed to upload image")

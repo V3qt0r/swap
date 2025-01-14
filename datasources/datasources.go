@@ -43,3 +43,11 @@ func InitDS() (*Ds, error) {
 		DB : db,
 	}, nil
 }
+
+
+func MigrateDB(db *gorm.DB) {
+	err := db.AutoMigrate(&models.Item{}, &models.Image{})
+	if err != nil {
+		log.Fatalf("Migration failed: %v", err)
+	}
+}

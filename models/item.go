@@ -4,18 +4,19 @@ import (
 	"time"
 )
 
+
 type Item struct {
 	Base
-	Name				string		`json:"name"`
-	Description			string 		`json: "description"`
-	CategoryName 		string 		`json: "catgeoryName"`
-	CategoryId          *uint       `json: "-"`
-	Prize				float64 	`json: "prize" gorm:"type:numeric(19,2);default:0"`
-	Sold				bool		`json: "sold" gorm:"type:boolean; default:false"`
-	User 				User        `gorm:"foreignKey:OwnerId" json:"-"`
-	OwnerId    			uint		`json: "-"`
-	SoldAt 				time.Time   `json:"soldAt"`
-	Images  			[]Image		`json:"images" gorm:"costraint: OnDelete: CASCADE"`
+	Name          string    `json:"name"`
+	Description   string    `json:"description"`
+	CategoryName  string    `json:"categoryName"`
+	CategoryId    *uint     `json:"-"` // Category relationship, optional
+	Prize         float64   `json:"prize" gorm:"type:numeric(19,2);default:0"`
+	Sold          bool      `json:"sold" gorm:"type:boolean;default:false"`
+	User          User      `gorm:"foreignKey:OwnerId" json:"-"` // Owner relationship
+	OwnerId       uint      `json:"-"`
+	SoldAt        time.Time `json:"soldAt"`
+	Images        []Image   `json:"images" gorm:"constraint:OnDelete:CASCADE"` // Images with cascade delete
 }
 
 

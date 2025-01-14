@@ -38,8 +38,8 @@ func (r *imageRepository) UploadImage(itemId int, folderName, fileName string) e
 
 	image.FilePath = folderName
 	image.FileName = fileName
-	image.ItemId = itemId
-	image.OwnerId = int(item.OwnerId)
+	image.ItemId = uint(itemId)
+	image.OwnerId = item.OwnerId
 
 	if err := r.DB.Create(&image).Error; err != nil {
 		log.Print("Could not save image to database")

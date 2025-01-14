@@ -190,9 +190,14 @@ func (r *itemRepository) BuyItem(userID, id int, amount float64) (string, error)
 	itemId := strconv.Itoa(id)
 	userId := strconv.Itoa(userID)
 	user := &models.User{}
+	owner := &models.User{}
 
 	if err := r.DB.Where("id = ?", itemId).Find(&item).Error; err != nil {
 		return "", apperrors.NewBadRequest("ID not found")
+	}
+
+	if err := r.DB.Where("id = ?", item.OwnerId).First(&owner).Error; err != nil {
+		return "", apperrors.NewBadRequest("Unable to find owner")
 	}
 
 	if err := r.DB.Where("id = ?", userId).First(&user).Error; err != nil {
@@ -217,9 +222,9 @@ func (r *itemRepository) BuyItem(userID, id int, amount float64) (string, error)
 	}
 
 	transactions := models.Transactions{
-		Name:   user.Name,
-		Email: user.Email,
-		PhoneNumber: user.PhoneNumber,
+		Name:   owner.Name,
+		Email: owner.Email,
+		PhoneNumber: owner.PhoneNumber,
 		OwnerId: user.ID,
 		ItemId: item.ID,
 		ItemName: item.Name,

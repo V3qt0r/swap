@@ -180,9 +180,6 @@ func (r *userRepository) UpdateUser(user models.User) error {
 	if user.Location != "" {
 		updatedDetails["Location"] = user.Location 
 	}
-	if user.BVN != "" {
-		updatedDetails["BVN"] = user.BVN
-	}
 
 	if err := r.DB.Model(&foundUser).Updates(updatedDetails).Error; err != nil {
 		return apperrors.NewInternal()
@@ -239,4 +236,22 @@ func (r *userRepository) GetUserTransactions(userId, limit, page int) ([]models.
 	}
 
 	return transactions, nil
+}
+
+
+func (r userRepository) GetUserByItemId(id int) (*models.User, error) {
+	item := &models.Item{}
+	user := &models.User{}
+
+	if err := r.DB.Where("id = ?", id).First(&item).Error; err != nil {
+		log.Print("Could not find item with provided id")
+		return nil, apperrors.NewBadRequest("Couldnt find item with provided id")
+	}
+
+	if err := r.DB.Where("id = ?", item.OwnerId).First(&user).Error; err != nil {
+		log.Print("Could not find user with provided item id")
+		return nil, apperrors.NewBadRequest("Could not find user with provided item id")
+	}
+
+	return user, nil
 }

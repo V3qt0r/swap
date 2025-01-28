@@ -130,6 +130,7 @@ func main() {
 	userAuthRoutes.GET("/emailOruserName", userHandler.FindUserByEmailOrUsername)
 	userAuthRoutes.GET("/phoneNumber", userHandler.FindUserByPhoneNumber)
 	userAuthRoutes.GET("/transaction", userHandler.GetUserTransactions)
+	userAuthRoutes.GET("details/:id", userHandler.GetUserByItemId)
 
 
 	itemGroup := ginEngine.Group("/api/items").Use(jwtMiddleware.MiddlewareFunc())

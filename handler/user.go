@@ -52,7 +52,6 @@ func (h *UserHandler) Register(c *gin.Context) {
 		Gender: request.Gender,
 		Password: request.Password,
 		Location: request.Location,
-		BVN: request.BVN,
 	}
 	user, err := h.userService.Register(registerUserPayload)
 
@@ -444,4 +443,19 @@ func (h *UserHandler) GetUserTransactions(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, api.NewResponse(http.StatusOK, "Successful", transactions))
+}
+
+
+func (h *UserHandler) GetUserByItemId(c *gin.Context) {
+	id := c.Param("id")
+	itemId, _ := strconv.Atoi(id)
+	user, err := h.userService.GetUserByItemId(itemId)
+
+	if err != nil {
+		log.Print("Could not get user details")
+		c.JSON(http.StatusBadRequest, api.NewResponse(http.StatusBadRequest, "Could not get user details", nil))
+		return	
+	}
+
+	c.JSON(http.StatusOK, api.NewResponse(http.StatusOK, "Successful", user))
 }

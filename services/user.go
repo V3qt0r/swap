@@ -347,3 +347,8 @@ func (s *userService) EnableTOTP(userId int) error {
 func (s *userService) GetUserTransactions(userId, limit, page int) ([]models.Transactions, error){
 	return s.UserRepository.GetUserTransactions(userId, limit, page)
 }
+
+
+func (s *userService) GetUserByItemId(id int) (*models.User, error) {
+	return s.UserRepository.GetUserByItemId(id)
+}

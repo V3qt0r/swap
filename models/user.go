@@ -41,7 +41,6 @@ type User struct {
 	Gender                string 	`json: "gender"`
 	Password			  string 	`json: "-"`
 	Location              string 	`json:"location"`
-	BVN                   string	`json: "-"`
 	TotpEnabled           bool      `json:"totpEnabled" gorm:"type:bool;default:false"`
 	TotpSecret            string    `json:"_"`
 	OneTimePassword       string    `json:"-"`
@@ -67,6 +66,7 @@ type IUserRepository interface {
 	UpdateUserTOTP(user User, totpSecret string, totpEnabled bool) error
 	UpdatePassword(userId uint, password string) error
 	GetUserTransactions(userId, limit, page int) ([]Transactions, error)
+	GetUserByItemId(id int) (*User, error)
 }
 
 type IUserService interface {
@@ -89,6 +89,7 @@ type IUserService interface {
 	DisableTOTP(userId int) error
 	EnableTOTP(userId int) error
 	GetUserTransactions(userId, limit, page int) ([]Transactions, error)
+	GetUserByItemId(id int) (*User, error)
 }
 
 func (user *User) HashPassword(password string) error {

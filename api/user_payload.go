@@ -22,7 +22,6 @@ type RegisterPayload struct {
 	Gender 		string      `json:"gender"`
 	Password 	string		`json:"password"`
 	Location 	string 		`json:"location"`
-	BVN			string 		`json:"bvn"`
 	IsAbove18 	bool		`json:"isAbove18"`
 }
 
@@ -33,7 +32,6 @@ func (r RegisterPayload) Sanitize() {
 	r.Email			=	strings.ToLower(r.Email)
 	r.PhoneNumber	=	strings.TrimSpace(r.PhoneNumber)
 	r.Password		=	strings.TrimSpace(r.Password)
-	r.BVN 			=	strings.TrimSpace(r.BVN)
 	r.Gender		=	strings.TrimSpace(r.Gender)
 	r.Gender		=   strings.ToLower(r.Gender)
 }
@@ -48,8 +46,6 @@ func (r RegisterPayload) Validate() error {
 		validation.Field(&r.Name,  validation.Length(3, 30)),
 		validation.Field(&r.Gender, validation.In("male", "female").Error("You must either be male or female")),
 		validation.Field(&r.Location, ),
-		validation.Field(&r.BVN, validation.Length(11, 11).Error("BVN must be 11 characters long"), 
-							validation.By(isDigits)),
 	)
 }
 
@@ -65,45 +61,6 @@ func isDigits(value interface{}) error {
 	}
 	return nil
 }
-
-// func validatePhoneNumber(value interface{}) error {
-// 	phone, ok := value.(string)
-
-// 	if !ok {
-// 		return apperrors.NewBadRequest("Phone number must be a valid string")
-// 	}
-
-// 	if len(phone) == 11 && matchPrefix(phone, "080", "081", "090", "091", "070", "071"){
-// 		if !isDigitsOnly(phone) {
-// 			return apperrors.NewBadRequest("Phone number must contain only digits")
-// 		}
-// 		return nil
-// 	}
-
-// 	if len(phone) == 14 && phone[:4] == "+234" {
-// 		areaCode := phone[4:6]
-// 		if matchPrefix(areaCode, "70", "71", "80", "81", "90", "91") && isDigitsOnly(phone[1:]) {
-// 			return nil
-// 		}
-// 	}
-// 	return apperrors.NewBadRequest("Phone number must be a valid string")
-// }
-
-
-// func matchPrefix(phone string, prefixes ...string) bool {
-// 	for _, prefix := range prefixes {
-// 		if phone[:3] == prefix{
-// 			return true
-// 		}
-// 	}
-// 	return false
-// }
-
-
-// func isDigitsOnly(s string) bool {
-// 	match, _ := regexp.MatchString("^[0-9]+$", s)
-// 	return match
-// }
 
 
 type UserSearchResponse struct {
@@ -134,7 +91,6 @@ type UserUpdatePayload struct {
 	DOB 		string	 `json:"dob"`
 	Gender		string		 `json:"gender"`
 	Location    string		 `json:"location"`
-	BVN         string		 `json:"bvn"`
 	ProfileUrl 	string		 `json:"profileUrl"`
 	ProfileIcon	string		 `json:"profileIcon"`		
 }
@@ -163,7 +119,6 @@ func (r UserUpdatePayload) Sanitize() {
 	r.Email			= 	strings.TrimSpace(r.Email)
 	r.Email			=	strings.ToLower(r.Email)
 	r.PhoneNumber	=	strings.TrimSpace(r.PhoneNumber)
-	r.BVN 			=	strings.TrimSpace(r.BVN)
 	r.Gender		=	strings.TrimSpace(r.Gender)
 	r.Gender		=   strings.ToLower(r.Gender)
 }
@@ -195,9 +150,6 @@ func (r UserUpdatePayload) ToEntity() models.User{
 	}
 	if r.Location != "" {
 		user.Location = r.Location
-	}
-	if r.BVN != "" {
-		user.BVN = r.BVN
 	}
 	if r.ProfileUrl != "" {
 		user.ProfileUrl = r.ProfileUrl
